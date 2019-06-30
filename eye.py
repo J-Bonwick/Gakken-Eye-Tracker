@@ -1,26 +1,25 @@
 #!/usr/bin/python
 
+# This is a PARED-DOWN version of eyes.py designed for the Gakken
+# WorldEye display.  It renders a single eye (centered on screen) and
+# does NOT require the OLED or TFT displays...doesn't even require the
+# Snake Eyes Bonnet if you just have it running in autonomous mode.
+# Code is just as in-progress as eyes.py and could use some work.
+
 import math
 import pi3d
 import random
+import thread
 import time
+import RPi.GPIO as GPIO
 from svg.path import Path, parse_path
 from xml.dom.minidom import parse
 from gfxutil import *
-
-import tracker
+import websocket
+import numpy
 
 # INPUT CONFIG for eye motion ----------------------------------------------
-# ANALOG INPUTS REQUIRE SNAKE EYES BONNET
-autoMove = True
-pupilAuto = True
-pupilValue = 0
-blink = False
-
-curX         = 0
-curY         = 0
-
-PUPIL_IN        = -1    # Analog input for pupil control (-1 = auto)
+PUPIL_IN        = 2    # Analog input for pupil control (-1 = auto)
 JOYSTICK_X_FLIP = False # If True, reverse stick X axis
 JOYSTICK_Y_FLIP = False # If True, reverse stick Y axis
 PUPIL_IN_FLIP   = False # If True, reverse reading from PUPIL_IN
@@ -30,6 +29,39 @@ PUPIL_MIN       = 0.0   # Lower analog range from PUPIL_IN
 PUPIL_MAX       = 1.0   # Upper "
 BLINK_PIN       = 23    # GPIO pin for blink button
 AUTOBLINK       = True  # If True, eye blinks autonomously
+
+
+adcValue = [0] * 4 # X,Y,IRIS,Blink
+timeOfLastMessage = time.time()
+
+GPIO.setmode(GPIO.BCM)
+if BLINK_PIN >= 0: GPIO.setup(BLINK_PIN , GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+
+def on_message(ws, message):
+	timeOfLastMessage = time.time()
+	print(timeOfLastMessage)
+	print(message)
+	separated = message.split(",")
+	print(separated)
+	if len(separated) == 4:
+		for x in range(4):
+			# Spaces are ignored
+			if separated[x] != " ":
+				adcValue[x] = float(separated[x])
+		
+	else:
+		print("Invalid data: " + message)
+def on_open(ws): # on open put this client in the "gakken" relay channel
+    ws.send("[gakken]SUBSCRIBE")
+
+def webSocketThread():
+	ws = websocket.WebSocketApp("wss://pxws.sstars.ws:3001/relay/", on_message = on_message)
+	ws.on_open = on_open
+	ws.run_forever()
+
+thread.start_new_thread( webSocketThread,())
+
 
 # Load SVG file, extract paths & convert to point lists --------------------
 
@@ -177,8 +209,8 @@ n            = math.sqrt(900.0 - startX * startX)
 startY       = random.uniform(-n, n)
 destX        = startX
 destY        = startY
-# curX         = startX
-# curY         = startY
+curX         = startX
+curY         = startY
 moveDuration = random.uniform(0.075, 0.175)
 holdDuration = random.uniform(0.1, 1.1)
 startTime    = 0.0
@@ -214,8 +246,6 @@ trackingPos = 0.3
 
 # Generate one frame of imagery
 def frame(p):
-	global blink
-	global autoMove
 	global startX, startY, destX, destY, curX, curY
 	global moveDuration, holdDuration, startTime, isMoving
 	global frames
@@ -243,17 +273,15 @@ def frame(p):
 
 	frames += 1
 #	if(now > beginningTime):
-#		print(frames/(now-beginningTime))
-
-	if not autoMove:
-		if JOYSTICK_X_FLIP: curX = 1.0 - curX
-		if JOYSTICK_Y_FLIP: curY = 1.0 - curY
-		# curX = -30.0 + curX * 60.0
-		# curY = -30.0 + curY * 60.0
-		# curX = 30
-		# curY = 30
+#		print(frames/(now-beginningTime))\
+	if True | (time.time() - timeOfLastMessage < 5):
+		# Use data from websocket
+		curX = adcValue[0]
+		curY = adcValue[1]
+		curX = -30.0 + curX * 60.0
+		curY = -30.0 + curY * 60.0
 	else :
-		# Autonomous eye position
+		# Autonomous eye position if no data has been recieved for 5 seconds
 		if isMoving == True:
 			if dt <= moveDuration:
 				scale        = (now - startTime) / moveDuration
@@ -307,7 +335,9 @@ def frame(p):
 		# Check if blink time has elapsed...
 		if (now - blinkStartTime) >= blinkDuration:
 			# Yes...increment blink state, unless...
-			if (blinkState == 1 and  blink):# Enblinking and...
+			if (blinkState == 1 and # Enblinking and...
+			    (BLINK_PIN >= 0 and    # blink pin held
+			     GPIO.input(BLINK_PIN) == GPIO.LOW)):
 				# Don't advance yet; eye is held closed
 				pass
 			else:
@@ -318,7 +348,7 @@ def frame(p):
 					blinkDuration *= 2.0
 					blinkStartTime = now
 	else:
-		if blink:
+		if BLINK_PIN >= 0 and GPIO.input(BLINK_PIN) == GPIO.LOW:
 			blinkState     = 1 # ENBLINK
 			blinkStartTime = now
 			blinkDuration  = random.uniform(0.035, 0.06)
@@ -383,8 +413,8 @@ def frame(p):
 	eye.rotateToX(curY)
 	eye.rotateToY(curX)
 	eye.draw()
-	upperEyelid.draw()
-	lowerEyelid.draw()
+        upperEyelid.draw()
+        lowerEyelid.draw()
 
 	k = mykeys.read()
 	if k==27:
@@ -418,31 +448,23 @@ def split( # Recursive simulated pupil response when no analog sensor
 
 
 # MAIN LOOP -- runs continuously -------------------------------------------
-def init():
-	global pupilAuto
-	global pupilValue
-	global PUPIL_IN
-	global PUPIL_IN_FLIP
-	global PUPIL_MIN
-	global PUPIL_MAX
-	global PUPIL_SMOOTH
-	global currentPupilScale
-	while True:
-		if not pupilAuto: # Pupil scale from sensor
-			v = pupilValue
-			if PUPIL_IN_FLIP: v = 1.0 - v
-			# If you need to calibrate PUPIL_MIN and MAX,
-			# add a 'print v' here for testing.
-			if   v < PUPIL_MIN: v = PUPIL_MIN
-			elif v > PUPIL_MAX: v = PUPIL_MAX
-			# Scale to 0.0 to 1.0:
-			v = (v - PUPIL_MIN) / (PUPIL_MAX - PUPIL_MIN)
-			if PUPIL_SMOOTH > 0:
-				v = ((currentPupilScale * (PUPIL_SMOOTH - 1) + v) /
-				     PUPIL_SMOOTH)
-			frame(v)
-		else: # Fractal auto pupil scale
-			v = random.random()
-			split(currentPupilScale, v, 4.0, 1.0)
-		currentPupilScale = v
-init()
+
+while True:
+
+	if PUPIL_IN >= 0: # Pupil scale from sensor
+		v = adcValue[PUPIL_IN]
+		if PUPIL_IN_FLIP: v = 1.0 - v
+		# If you need to calibrate PUPIL_MIN and MAX,
+		# add a 'print v' here for testing.
+		if   v < PUPIL_MIN: v = PUPIL_MIN
+		elif v > PUPIL_MAX: v = PUPIL_MAX
+		# Scale to 0.0 to 1.0:
+		v = (v - PUPIL_MIN) / (PUPIL_MAX - PUPIL_MIN)
+		if PUPIL_SMOOTH > 0:
+			v = ((currentPupilScale * (PUPIL_SMOOTH - 1) + v) /
+			     PUPIL_SMOOTH)
+		frame(v)
+	else: # Fractal auto pupil scale
+		v = random.random()
+		split(currentPupilScale, v, 4.0, 1.0)
+	currentPupilScale = v
