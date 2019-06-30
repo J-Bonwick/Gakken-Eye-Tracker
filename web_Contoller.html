@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        div#box {
+            width: 600px;
+            height: 600px;
+            border: 1px solid black;
+            text-align: center;
+        }
+    </style>
+    <script>
+        websocket = new WebSocket("wss://pxws.sstars.ws:3001/relay/");
+        function showCoords(event) {
+            var x = (1 - (event.clientX / 600)).toFixed(3);
+            var y = (1 - (event.clientY / 600)).toFixed(3);
+            var coords = "X: " + x + ", Y: " + y;
+            websocket.send("[gakken]" + x + "," + y + ", , ")
+            document.getElementById("box").innerHTML = coords;
+        }
+        function changeFocus(z) {
+            websocket.send("[gakken] , ," + z + ", ")
+        }
+    </script>
+</head>
+
+<body>
+    <div>
+        <p>Click in the box to move the eye</p>
+        <div id="box" onclick="showCoords(event)">
+            <p id="box"></p>
+        </div>
+        <p>Drag the slider to change focus</p>
+        <input type="range" min="0" max="1" value="0.5" id="rangeSlide" step="0.01" onchange="changeFocus(this.value)">
+    </div>
+    <p id="box"></p>
+
+
+
+</body>
+
+</html>
