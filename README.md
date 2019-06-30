@@ -2,10 +2,7 @@
 Projects an eye onto the gakken Worldeye That follows people
 
 ## Files:
-eye.py - Displays the eye to the display and controls its position
-
-tracker.py - Returns an x and y for a tracked target.
-
-tracker_old.py - Old tracker that displays the visual output ot he screen.
-
-main.py - Parses tracker data to eye.py.
+eye.py - Displays the eye on the display and controls its position.
+  Websocket input: `"[gakken]X,Y,IRIS,BLINK"`. X,Y and iris are floating point values between 0 and 1. Blink is yet to implemented.
+ 
+web_Contoller.html - Simple html page that allows basic control of the eye.
