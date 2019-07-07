@@ -3,7 +3,7 @@
 This project aims to make a virtual eye look at points of interest such as faces. To achieve this a raspberry pi is used to display the eye and recieve commands. A seperate web server is then used to track objects from a camera and send it to the raspberry pi.
 
 ## Installation:
-[Install.md](install.md)
+![Install.md](install.md)
 
 ## Flow chart:
 [](flowchart.png)
