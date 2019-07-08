@@ -56,9 +56,10 @@ def on_open(ws): # on open put this client in the "gakken" relay channel
     ws.send("[gakken]SUBSCRIBE")
 
 def webSocketThread():
-	ws = websocket.WebSocketApp("wss://pxws.sstars.ws:3001/relay/", on_message = on_message)
-	ws.on_open = on_open
-	ws.run_forever()
+	while True:
+		ws = websocket.WebSocketApp("wss://pxws.sstars.ws:3001/relay/", on_message = on_message)
+		ws.on_open = on_open
+		ws.run_forever()
 
 thread.start_new_thread( webSocketThread,())
 
