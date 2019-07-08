@@ -15,7 +15,7 @@ This will need to run on a different computer to the raspberry pi.
 5. From there Click on **Color Mapper** to load up the tracking program.
  ## Part 3 - Running the tracker on a server:
  In oder to get this running under apache we need to copy the compiled javascript to another folder.
- 1. Follow Part 2, steps 1-4. This will build posenet into a dist folder in the root of the posenet sketchbook repository.
+ 1. Follow Part 2, steps 1-3. Then run `yarn build` to build posenet into a dist folder in the root of the posenet sketchbook repository.
  2. Once built then terminate the yarn process.
  3. Make a folder to place the compiled javascript `posenet-dist`.
  4. Copy `dist/sketches/colormapper/index.html` to `posenet-dist`.
