@@ -12,4 +12,4 @@
 - [ ] Make eyes go to sleep when they can't see a target and then wake up again when they do.
 - [ ] Display dots on the tracker so the user knows what the eye is looking at.
 - [ ] Add support for cameras mounted to the left or right of the eyes so that the eyes still look at the target.
-- [ ] Improve documentation and installion.
+- [ ] Improve documentation and installation
