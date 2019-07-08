@@ -16,8 +16,8 @@ This will need to run on a different computer to the raspberry pi.
  ## Part 3 - Running the tracker on a server:
  In oder to get this running under apache we need to copy the compiled javascript to another folder.
  1. Follow Part 2, steps 1-3. Then run `yarn build` to build posenet into a dist folder in the root of the posenet sketchbook repository.
- 2. Once built then terminate the yarn process.
- 3. Make a folder to place the compiled javascript `posenet-dist`.
- 4. Copy `dist/sketches/colormapper/index.html` to `posenet-dist`.
- 5. Look in the `index.html` and also copy the relevant `style[HEXID].css` and `main[HEXID].js`.
- 6. Then you should be able to access the modified colormapper at `posenet-dist/index.html`
+ 2. Make a folder to place the compiled javascript `posenet-dist`.
+ 3. Copy `dist/sketches/colormapper/index.html` to `posenet-dist`.
+ 4. Look in the `index.html` and also copy the relevant `style[HEXID].css` and `main[HEXID].js`.
+ 5. Edit the `index.html` and remove and paths in front of `style[HEXID].css` and `main[HEXID].js`.
+ 5. Then you should be able to access the modified colormapper at `posenet-dist/index.html`
