@@ -37,7 +37,7 @@ timeOfLastMessage = time.time()
 GPIO.setmode(GPIO.BCM)
 if BLINK_PIN >= 0: GPIO.setup(BLINK_PIN , GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-
+#Function to read and decode the incoming message
 def on_message(ws, message):
 	timeOfLastMessage = time.time()
 	print(timeOfLastMessage)
