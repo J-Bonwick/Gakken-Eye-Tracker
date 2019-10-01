@@ -13,3 +13,4 @@
 - [ ] Make eyes go to sleep when they can't see a target and then wake up again when they do.
 - [ ] Display dots on the tracker so the user knows what the eye is looking at.
 - [ ] Improve documentation and installation instructions.
+- [ ] Look into using a Pi-4 with two hdmi outs.
